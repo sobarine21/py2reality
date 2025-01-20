@@ -1,14 +1,12 @@
 import streamlit as st
 import os
 import subprocess
-import time
 from pathlib import Path
 
 # Title and Description
 st.title("Python Script to EXE Converter")
 st.markdown("""
-Upload a Python script (.py), and this app will convert it into a standalone `.exe` file for desktop use.
-- The `.exe` file will be provided as a download after processing.
+Upload a Python script (.py), and this app will convert it into a standalone `.exe` file.
 """)
 
 # Directories for temporary files
@@ -25,22 +23,25 @@ uploaded_file = st.file_uploader("Upload Python Script", type=["py"])
 # Function to convert Python script to .exe
 def convert_to_exe(script_path):
     try:
-        # Use PyInstaller to convert the script
+        # Run PyInstaller command
         result = subprocess.run(
             [
-                "pyinstaller", 
-                "--onefile", 
-                "--distpath", OUTPUT_DIR, 
+                "pyinstaller",
+                "--onefile",
+                "--distpath", OUTPUT_DIR,
                 script_path
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
+        
+        # Capture logs
+        st.text_area("PyInstaller Logs", result.stdout + "\n" + result.stderr, height=300)
 
-        # Check for errors in PyInstaller execution
+        # Check for errors
         if result.returncode != 0:
-            return None, result.stderr
+            return None, f"PyInstaller failed with return code {result.returncode}. Check logs above."
 
         # Locate the generated .exe file
         script_name = Path(script_path).stem
@@ -48,9 +49,9 @@ def convert_to_exe(script_path):
         if os.path.exists(exe_path):
             return exe_path, None
         else:
-            return None, "The .exe file could not be found."
+            return None, "The .exe file could not be found. Please check the script or PyInstaller settings."
     except Exception as e:
-        return None, str(e)
+        return None, f"Unexpected error: {str(e)}"
 
 # Handle uploaded script
 if uploaded_file:
