@@ -1,2 +1,2 @@
 streamlit
-pyinstaller
+cx_Freeze
