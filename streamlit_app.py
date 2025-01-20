@@ -1,12 +1,13 @@
 import streamlit as st
 import os
-import subprocess
+import cx_Freeze
+import sys
 from pathlib import Path
 
 # Title and Description
-st.title("Python Script to EXE Converter")
+st.title("Python Script to EXE Converter (cx_Freeze)")
 st.markdown("""
-Upload a Python script (.py), and this app will convert it into a standalone `.exe` file using PyInstaller.
+Upload a Python script (.py), and this app will convert it into a standalone `.exe` file using cx_Freeze. 
 The converted .exe file will automatically download upon successful conversion.
 """)
 
@@ -21,41 +22,39 @@ Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 # Upload Python script
 uploaded_file = st.file_uploader("Upload Python Script", type=["py"])
 
-# Function to convert Python script to .exe
+# Function to convert Python script to .exe using cx_Freeze
 def convert_to_exe(script_path):
-  try:
-    # Run PyInstaller with --distpath to control output directory
-    result = subprocess.run(
-        [
-            "pyinstaller",
-            "--onefile",
-            "--distpath", OUTPUT_DIR,
-            script_path
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
+    try:
+        # Create cx_Freeze build options
+        build_options = {
+            'build_exe': OUTPUT_DIR,
+            'include_files': [],  # Add any necessary files here
+            'packages': [],  # Add any necessary packages here
+            'excludes': [],  # Add any packages to exclude here
+        }
 
-    # Check for errors in the PyInstaller process
-    if result.returncode != 0:
-      st.error("PyInstaller failed. Check the logs below:")
-      st.text_area("PyInstaller Logs", result.stdout + "\n" + result.stderr, height=300)
-      return None
+        # Create cx_Freeze executable options
+        exe = cx_Freeze.Executable(
+            script_path,
+            base=None,  # Use 'Win32GUI' for GUI applications on Windows
+            target_name=os.path.splitext(os.path.basename(script_path))[0] + ".exe"
+        )
 
-    # Dynamically detect the .exe file in the OUTPUT_DIR
-    script_name = Path(script_path).stem
-    for file in os.listdir(OUTPUT_DIR):
-      if file.startswith(script_name) and file.endswith(".exe"):
-        return os.path.join(OUTPUT_DIR, file)
+        # Create cx_Freeze setup
+        cx_Freeze.setup(
+            name=os.path.splitext(os.path.basename(script_path))[0],
+            options={'build_exe': build_options},
+            executables=[exe]
+        )
 
-    # If no .exe file was found, provide a meaningful error message
-    st.error("Conversion failed: No .exe file found in the output directory.")
-    return None
+        # Get the path to the generated .exe file
+        exe_file = os.path.join(OUTPUT_DIR, exe.target_name)
 
-  except Exception as e:
-    st.error(f"An unexpected error occurred: {str(e)}")
-    return None
+        return exe_file
+
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {str(e)}")
+        return None
 
 # Handle uploaded script
 if uploaded_file:
