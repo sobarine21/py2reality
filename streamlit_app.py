@@ -210,7 +210,6 @@ def load_configuration():
 
 def verify_dependencies(exe_path):
     """Verify if all the dependencies required by the .exe are present."""
-    # This could use tools to inspect the .exe or cross-check with a list of known dependencies.
     st.info("Dependency verification feature is not implemented but could be added.")
 
 def optimize_for_size(exe_path):
@@ -240,29 +239,39 @@ def remove_previous_version(exe_path):
 
 # Example usage
 if __name__ == "__main__":
-    script_path = st.text_input("Enter path to your Python script:", "")
-    custom_icon = st.file_uploader("Upload a custom icon", type="ico")
+    # Upload script and icon
+    script_file = st.file_uploader("Upload your Python script (.py)", type="py")
+    custom_icon = st.file_uploader("Upload a custom icon (.ico)", type="ico")
+    
     add_data_files = st.checkbox("Include additional data files")
     show_progress = st.checkbox("Show progress during conversion")
     single_file = st.checkbox("Create a single .exe file")
 
-    if script_path and validate_script(script_path):
-        exe_file = convert_to_exe(
-            script_path,
-            custom_icon=custom_icon,
-            add_data_files=add_data_files,
-            show_progress=show_progress,
-            single_file=single_file
-        )
+    # Process when user uploads a Python script
+    if script_file is not None:
+        # Save the uploaded script file to a temporary location
+        script_path = os.path.join(OUTPUT_DIR, script_file.name)
+        with open(script_path, "wb") as f:
+            f.write(script_file.getbuffer())
+        
+        # Validate and process the script file
+        if validate_script(script_path):
+            exe_file = convert_to_exe(
+                script_path,
+                custom_icon=custom_icon,
+                add_data_files=add_data_files,
+                show_progress=show_progress,
+                single_file=single_file
+            )
 
-        if exe_file:
-            extract_dependencies(exe_file)
-            bundle_dependencies(exe_file)
-            compress_exe(exe_file)
-            rename_exe(exe_file, "custom_name.exe")
-            # Additional Features
-            check_file_hash(exe_file, "expected_sha256_hash")
-            store_configuration({"custom_icon": custom_icon.name})
-            load_configuration()
-            backup_previous_version(exe_file)
-            remove_previous_version(exe_file)
+            if exe_file:
+                extract_dependencies(exe_file)
+                bundle_dependencies(exe_file)
+                compress_exe(exe_file)
+                rename_exe(exe_file, "custom_name.exe")
+                # Additional Features
+                check_file_hash(exe_file, "expected_sha256_hash")
+                store_configuration({"custom_icon": custom_icon.name})
+                load_configuration()
+                backup_previous_version(exe_file)
+                remove_previous_version(exe_file)
