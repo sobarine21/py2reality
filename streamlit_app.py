@@ -8,10 +8,10 @@ import time
 import platform
 import json
 import hashlib
-import io
 
 # Constants
-OUTPUT_DIR = "/tmp/output"  # Use Streamlit's temporary directory for output
+OUTPUT_DIR = "/tmp/output"  # Ensure output is saved in Streamlit's /tmp directory
+TEMP_DIR = "/tmp/temp"  # Temporary directory for intermediary files used by PyInstaller
 CONFIG_FILE = "config.json"  # Optional configuration file
 
 # Ensure necessary directories exist
@@ -19,11 +19,15 @@ def setup_directories():
     """Ensure output directory exists."""
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
+    if not os.path.exists(TEMP_DIR):
+        os.makedirs(TEMP_DIR)
 
 def cleanup_directories():
     """Clean up temporary directories after conversion."""
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR)
 
 def log_to_file(log_data, filename="conversion.log"):
     """Log the output of PyInstaller to a file."""
@@ -46,7 +50,7 @@ def convert_to_exe(script_path, custom_icon=None, add_data_files=False, show_pro
         pyinstaller_args = [
             "pyinstaller",
             "--distpath", OUTPUT_DIR,
-            "--workpath", "/tmp",  # Avoid writing to non-existing temp directories
+            "--workpath", TEMP_DIR,
             "--name", script_name
         ]
 
