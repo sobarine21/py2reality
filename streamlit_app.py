@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import subprocess
 from pathlib import Path
+import shutil
 
 # Title and Description
 st.title("Python Script to EXE Converter")
@@ -45,9 +46,9 @@ def convert_to_exe(script_path):
 
         # Dynamically detect the .exe file in the OUTPUT_DIR
         script_name = Path(script_path).stem
-        for file in os.listdir(OUTPUT_DIR):
-            if file.startswith(script_name) and file.endswith(".exe"):
-                return os.path.join(OUTPUT_DIR, file)
+        exe_file_path = Path(OUTPUT_DIR) / f"{script_name}.exe"
+        if exe_file_path.exists():
+            return str(exe_file_path)
 
         # If no .exe file was found, provide a meaningful error message
         st.error("Conversion failed: No .exe file found in the output directory.")
@@ -60,7 +61,7 @@ def convert_to_exe(script_path):
 # Handle uploaded script
 if uploaded_file:
     # Save the uploaded script temporarily
-    script_path = os.path.join(TEMP_DIR, uploaded_file.name)
+    script_path = Path(TEMP_DIR) / uploaded_file.name
     with open(script_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
@@ -89,8 +90,5 @@ if uploaded_file:
 if st.button("Clear Temporary Files"):
     # Remove temporary and output directories
     for folder in [TEMP_DIR, OUTPUT_DIR]:
-        if os.path.exists(folder):
-            for file in os.listdir(folder):
-                os.remove(os.path.join(folder, file))
-            os.rmdir(folder)
+        shutil.rmtree(folder)
     st.success("Temporary files cleared successfully.")
