@@ -6,7 +6,7 @@ from pathlib import Path
 # Title and Description
 st.title("Python Script to EXE Converter")
 st.markdown("""
-Upload a Python script (.py), and this app will convert it into a standalone `.exe` file.
+Upload a Python script (.py), and this app will convert it into a standalone `.exe` file using PyInstaller.
 """)
 
 # Directories for temporary files
@@ -23,7 +23,7 @@ uploaded_file = st.file_uploader("Upload Python Script", type=["py"])
 # Function to convert Python script to .exe
 def convert_to_exe(script_path):
     try:
-        # Run PyInstaller command
+        # Run PyInstaller with --distpath to control output directory
         result = subprocess.run(
             [
                 "pyinstaller",
@@ -36,20 +36,22 @@ def convert_to_exe(script_path):
             text=True
         )
         
-        # Capture logs
+        # Display logs
         st.text_area("PyInstaller Logs", result.stdout + "\n" + result.stderr, height=300)
 
-        # Check for errors
+        # Check for errors in the PyInstaller process
         if result.returncode != 0:
             return None, f"PyInstaller failed with return code {result.returncode}. Check logs above."
 
-        # Locate the generated .exe file
+        # Dynamically detect the .exe file in the OUTPUT_DIR
         script_name = Path(script_path).stem
-        exe_path = os.path.join(OUTPUT_DIR, f"{script_name}.exe")
-        if os.path.exists(exe_path):
-            return exe_path, None
-        else:
-            return None, "The .exe file could not be found. Please check the script or PyInstaller settings."
+        for file in os.listdir(OUTPUT_DIR):
+            if file.startswith(script_name) and file.endswith(".exe"):
+                return os.path.join(OUTPUT_DIR, file), None
+
+        # If no .exe file was found, provide a meaningful error message
+        return None, f"No .exe file found in {OUTPUT_DIR}. Please check PyInstaller logs for details."
+
     except Exception as e:
         return None, f"Unexpected error: {str(e)}"
 
