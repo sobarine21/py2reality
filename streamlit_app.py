@@ -7,6 +7,7 @@ from pathlib import Path
 st.title("Python Script to EXE Converter")
 st.markdown("""
 Upload a Python script (.py), and this app will convert it into a standalone `.exe` file using PyInstaller.
+Once the conversion is done, the `.exe` file will automatically download.
 """)
 
 # Directories for temporary files
@@ -35,25 +36,26 @@ def convert_to_exe(script_path):
             stderr=subprocess.PIPE,
             text=True
         )
-        
-        # Display logs
-        st.text_area("PyInstaller Logs", result.stdout + "\n" + result.stderr, height=300)
 
         # Check for errors in the PyInstaller process
         if result.returncode != 0:
-            return None, f"PyInstaller failed with return code {result.returncode}. Check logs above."
+            st.error("PyInstaller failed. Check the logs below:")
+            st.text_area("PyInstaller Logs", result.stdout + "\n" + result.stderr, height=300)
+            return None
 
         # Dynamically detect the .exe file in the OUTPUT_DIR
         script_name = Path(script_path).stem
         for file in os.listdir(OUTPUT_DIR):
             if file.startswith(script_name) and file.endswith(".exe"):
-                return os.path.join(OUTPUT_DIR, file), None
+                return os.path.join(OUTPUT_DIR, file)
 
         # If no .exe file was found, provide a meaningful error message
-        return None, f"No .exe file found in {OUTPUT_DIR}. Please check PyInstaller logs for details."
+        st.error("Conversion failed: No .exe file found in the output directory.")
+        return None
 
     except Exception as e:
-        return None, f"Unexpected error: {str(e)}"
+        st.error(f"An unexpected error occurred: {str(e)}")
+        return None
 
 # Handle uploaded script
 if uploaded_file:
@@ -67,22 +69,23 @@ if uploaded_file:
     # Convert to .exe when the button is clicked
     if st.button("Convert to .exe"):
         with st.spinner("Converting to .exe... This may take a moment."):
-            exe_file, error = convert_to_exe(script_path)
+            exe_file = convert_to_exe(script_path)
         
-        # Handle the result of the conversion
+        # If conversion was successful, trigger an automatic download
         if exe_file:
-            st.success("Conversion successful!")
+            st.success("Conversion successful! Your .exe file is downloading now...")
             with open(exe_file, "rb") as f:
                 st.download_button(
                     label="Download .exe file",
                     data=f,
                     file_name=os.path.basename(exe_file),
-                    mime="application/octet-stream"
+                    mime="application/octet-stream",
+                    key="auto_download"
                 )
         else:
-            st.error(f"Conversion failed: {error}")
+            st.error("Conversion failed. Please review the logs or try again.")
 
-# Clear all temporary files
+# Clear temporary files automatically after use
 if st.button("Clear Temporary Files"):
     # Remove temporary and output directories
     for folder in [TEMP_DIR, OUTPUT_DIR]:
@@ -90,4 +93,4 @@ if st.button("Clear Temporary Files"):
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
             os.rmdir(folder)
-    st.success("All temporary files have been cleared!")
+    st.success("Temporary files cleared successfully.")
